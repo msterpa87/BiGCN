@@ -6,6 +6,7 @@ from collections import defaultdict
 from spektral.data import Dataset
 from spektral.data.graph import Graph
 from contextlib import suppress
+from spektral.utils import one_hot
 
 from utils import *
 
@@ -29,7 +30,7 @@ class WICO(Dataset):
             pathname = f"{self.custom_path}/{graph_type}/"
             subgraphs_list = list(map(int, filter(str.isnumeric, listdir(pathname))))
 
-            for graph_id in sorted(subgraphs_list):
+            for graph_id in sorted(subgraphs_list)[:200]:
                 G = load_graph_from_file(f"{pathname}/{graph_id}",
                                         root_edges=True, time_delay_edges=True)
                 
@@ -57,6 +58,6 @@ class WICO(Dataset):
 
                     x[i] = np.array([friends, followers, n_tweets, tweet_time], dtype=float)
 
-                graph_spektral_list.append(Graph(a=A, x=x, y=y))
+                graph_spektral_list.append(Graph(a=A, x=x, y=one_hot(y, 3)))
         
         return graph_spektral_list
