@@ -30,7 +30,7 @@ class WICO(Dataset):
             pathname = f"{self.custom_path}/{graph_type}/"
             subgraphs_list = list(map(int, filter(str.isnumeric, listdir(pathname))))
 
-            for graph_id in sorted(subgraphs_list)[:200]:
+            for graph_id in sorted(subgraphs_list):
                 G = load_graph_from_file(f"{pathname}/{graph_id}",
                                         root_edges=True, time_delay_edges=True)
                 
