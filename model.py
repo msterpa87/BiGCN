@@ -7,6 +7,7 @@ from contextlib import suppress
 import spektral
 import numpy as np
 from spektral.data.graph import Graph
+from spektral.layers import DiffPool
 
 class GNN(tf.keras.Model):
     def __init__(self, hidden_channels, out_channels, add_linear=True):
@@ -50,8 +51,7 @@ def dense_diff_pool(x, adj, s):
 
     #batch_size, num_nodes, _ = x.shape  # used when maks is implemented
 
-    # s = tf.nn.softmax(s, axis=-1)
-    s = tf.nn.softmax(s, axis=-1)    # check if this works as tf.nn.softmax(x, axis=-1)
+    s = tf.nn.softmax(s, axis=-1)
     st = tf.transpose(s, (1, 0))
 
     out = tf.matmul(st, x)
@@ -69,18 +69,18 @@ class Net(tf.keras.Model):
     def __init__(self, num_classes=6, max_nodes=200):
         super(Net, self).__init__()
 
-        num_nodes = np.ceil(0.5 * max_nodes).astype(int)
+        num_nodes = np.ceil(0.25 * max_nodes).astype(int)
         self.gnn1_pool = GNN(64, num_nodes)
         self.gnn1_embed = GNN(64, 64, add_linear=False)
 
-        num_nodes = np.ceil(0.5 * num_nodes).astype(int)
+        num_nodes = np.ceil(0.25 * num_nodes).astype(int)
         self.gnn2_pool = GNN(64, num_nodes)
         self.gnn2_embed = GNN(64, 64, add_linear=False)
 
         self.gnn3_embed = GNN(64, 64, add_linear=False)
 
-        self.lin1 = Dense(64)
-        self.lin2 = Dense(num_classes)
+        self.lin1 = Dense(64, activation='relu')
+        self.lin2 = Dense(num_classes, activation='sigmoid')
     
     def call(self, inputs):
         x, adj = inputs
@@ -101,7 +101,41 @@ class Net(tf.keras.Model):
         if len(x.shape) == 1:
             x = tf.expand_dims(x, axis=0)
 
-        x = relu(self.lin1(x))
+        x = self.lin1(x)
         x = self.lin2(x)
 
-        return tf.nn.log_softmax(x, axis=-1), l1 + l2, e1 + e2
+        return x, l1 + l2, e1 + e2
+
+class GNNCL(tf.keras.Model):
+    def __init__(self, num_classes=6, max_nodes=200, channels=64, shrinkage=0.25):
+        super(GNNCL, self).__init__()
+
+        num_nodes = np.ceil(shrinkage * max_nodes).astype(int)
+        self.pool1 = DiffPool(num_nodes, channels=channels)
+
+        num_nodes = np.ceil(shrinkage * num_nodes).astype(int)
+        self.pool2 = DiffPool(num_nodes, channels=channels)
+
+        self.gnn_embed = GNN(channels, channels, add_linear=False)
+
+        self.lin1 = Dense(channels, activation='relu')
+        self.lin2 = Dense(num_classes, activation='sigmoid')
+    
+    def call(self, inputs):
+        x, adj = inputs
+        x, adj = self.pool1([x, adj])
+        adj = tf.sparse.from_dense(adj)
+
+        x, adj = self.pool2([x, adj])
+        adj = tf.sparse.from_dense(adj)
+        
+        x = self.gnn_embed([x, adj])
+        x = tf.reduce_mean(x, axis=1)
+
+        if len(x.shape) == 1:
+            x = tf.expand_dims(x, axis=0)
+
+        x = self.lin1(x)
+        x = self.lin2(x)
+
+        return x

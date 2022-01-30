@@ -102,7 +102,7 @@ class FakenNewsNet(Dataset):
                 for i,user_id in enumerate(G.nodes):
                     x[i] = features[user_id]
                 
-                graph_spektral_list.append(Graph(a=A, x=x, y=one_hot(y,2)))
+                graph_spektral_list.append(Graph(a=A, x=x, y=y))
         
         return graph_spektral_list
 
