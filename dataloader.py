@@ -7,7 +7,6 @@ from spektral.data import Dataset
 from spektral.data.graph import Graph
 from contextlib import suppress
 from spektral.utils import one_hot
-
 from utils import *
 
 ################################################################
@@ -85,12 +84,9 @@ class FakenNewsNet(Dataset):
             subgraphs_path = f"{self.custom_path}/{label}/subgraphs"
             features_path = f"{self.custom_path}/{label}/features"
 
-            print(subgraphs_path, features_path)
-
             for filename in listdir(subgraphs_path):
-                print(filename)
                 # load news subgraphs
-                edge_list = load_edge_list(f"{subgraphs_path}/{filename}")
+                edge_list = load_edge_list(f"{subgraphs_path}/{filename}", sep=", ")
                 G = nx.from_edgelist(edge_list)
 
                 A = to_scipy_sparse_matrix(G, dtype=float)
