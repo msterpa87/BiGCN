@@ -10,8 +10,8 @@ from tqdm import tqdm
 from datetime import datetime
 import tweepy
 
-MAX_TIME_DIFF = 1
-MIN_SUBGRAPH_EDGES = 5
+MAX_TIME_DIFF = 10      # max number of hours to add edge between tweets
+MIN_SUBGRAPH_EDGES = 5  # min number of edges to create a news subgraph
 
 def load_edge_list(filename, sep=""):
     edges = []
