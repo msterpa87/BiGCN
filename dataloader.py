@@ -10,6 +10,11 @@ from spektral.utils import one_hot
 
 from utils import *
 
+################################################################
+#                                                              #
+#                         WICO dataset                         #
+#                                                              #
+################################################################
 class WICO(Dataset):
     def __init__(self, path="./dataset/WICO/", root_edges=True,
                  time_delay_edges=True, hours=1):
@@ -61,3 +66,50 @@ class WICO(Dataset):
                 graph_spektral_list.append(Graph(a=A, x=x, y=one_hot(y, 3)))
         
         return graph_spektral_list
+
+
+################################################################
+#                                                              #
+#         FakeNewsNet dataset (politifact and gossipcop)       #
+#                                                              #
+################################################################
+class FakenNewsNet(Dataset):
+    def __init__(self, path):
+        self.custom_path = path
+        super().__init__()
+    
+    def read(self):
+        graph_spektral_list = []
+
+        for y, label in enumerate(["real", "fake"]):
+            subgraphs_path = f"{self.custom_path}/{label}/subgraphs"
+            features_path = f"{self.custom_path}/{label}/features"
+
+            print(subgraphs_path, features_path)
+
+            for filename in listdir(subgraphs_path):
+                print(filename)
+                # load news subgraphs
+                edge_list = load_edge_list(f"{subgraphs_path}/{filename}")
+                G = nx.from_edgelist(edge_list)
+
+                A = to_scipy_sparse_matrix(G, dtype=float)
+
+                # load node features
+                features = load_features(f"{features_path}/{filename}")
+
+                # special node has all features = 0
+                features[0] = np.zeros(8)
+                x = np.zeros((len(G.nodes), 8), dtype=float)
+
+                # create feature matrix respecting graph nodes ordering
+                for i,user_id in enumerate(G.nodes):
+                    x[i] = features[user_id]
+                
+                graph_spektral_list.append(Graph(a=A, x=x, y=y))
+        
+        return graph_spektral_list
+
+
+
+
