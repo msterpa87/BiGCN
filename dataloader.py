@@ -87,7 +87,7 @@ class FakenNewsNet(Dataset):
             for filename in listdir(subgraphs_path):
                 # load news subgraphs
                 edge_list = load_edge_list(f"{subgraphs_path}/{filename}", sep=", ")
-                G = nx.from_edgelist(edge_list)
+                G = nx.from_edgelist(edge_list, create_using=nx.DiGraph)
 
                 A = to_scipy_sparse_matrix(G, dtype=float)
 
