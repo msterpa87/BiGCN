@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 import tweepy
 import numpy as np
-from spektral.data import DisjointLoader
+from spektral.data import DisjointLoader, BatchLoader
 
 MAX_TIME_DIFF = 10      # max number of hours to add edge between tweets
 MIN_SUBGRAPH_EDGES = 5  # min number of edges to create a news subgraph
@@ -104,6 +104,8 @@ def months_from_creation(date):
     return (date.year - twitter_creation.year)*12 + date.month - twitter_creation.month
 
 def save_edge_list(edge_list, pathname):
+    edge_list = list(set(edge_list))
+
     with open(pathname, "w") as f:
         for (u,v) in edge_list:
             f.write(f"{u}, {v}\n")
@@ -139,6 +141,7 @@ class TwitterNode(object):
         self.friends_count = user['friends_count']
         self.statuses_count = user['statuses_count']
         self.favourites_count = user['favourites_count']
+        self.retweeted = node['retweeted_status']
         self.lists_count = user['listed_count']
         self.verified = int(user['verified'])
         self.user_created_at = months_from_creation(str_to_time(user['created_at']))
@@ -146,6 +149,10 @@ class TwitterNode(object):
         self.tweet_id = node['id']
         self.mentions = [x['id'] for x in node['entities']['user_mentions']]
         self.created_at = str_to_time(node['created_at'])
+
+        self.retweeted_from = None
+        if 'reweeted_from' in node.keys():
+            self.retweeted_from = node['retweeted_from']
     
     def get_features_vector(self):
         return [self.verified, self.user_created_at, self.followers_count,
@@ -165,7 +172,7 @@ def random_split(data, train_pct=0.75, train_epochs=5, batch_size=1, seed=None):
     train_set = data[:train_size]
     test_set = data[train_size:]
 
-    train_loader = DisjointLoader(train_set, batch_size=batch_size, epochs=train_epochs, shuffle=True)
-    test_loader = DisjointLoader(test_set, batch_size=batch_size, epochs=1)
+    train_loader = BatchLoader(train_set, batch_size=batch_size, epochs=train_epochs, shuffle=True)
+    test_loader = BatchLoader(test_set, batch_size=batch_size, epochs=1)
 
     return train_loader, test_loader
