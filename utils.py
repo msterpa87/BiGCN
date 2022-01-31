@@ -141,7 +141,6 @@ class TwitterNode(object):
         self.friends_count = user['friends_count']
         self.statuses_count = user['statuses_count']
         self.favourites_count = user['favourites_count']
-        self.retweeted = node['retweeted_status']
         self.lists_count = user['listed_count']
         self.verified = int(user['verified'])
         self.user_created_at = months_from_creation(str_to_time(user['created_at']))
@@ -151,7 +150,7 @@ class TwitterNode(object):
         self.created_at = str_to_time(node['created_at'])
 
         self.retweeted_from = None
-        if 'reweeted_from' in node.keys():
+        if 'retweeted_from' in node.keys():
             self.retweeted_from = node['retweeted_from']
     
     def get_features_vector(self):
