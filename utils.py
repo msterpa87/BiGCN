@@ -3,12 +3,10 @@ import networkx as nx
 import pandas as pd
 from os import listdir
 import json
-from os import listdir, mkdir
-from os.path import isfile
-from contextlib import suppress
-from tqdm import tqdm
 from datetime import datetime
 import tweepy
+import numpy as np
+from spektral.data import DisjointLoader
 
 MAX_TIME_DIFF = 10      # max number of hours to add edge between tweets
 MIN_SUBGRAPH_EDGES = 5  # min number of edges to create a news subgraph
@@ -38,7 +36,7 @@ def load_graph_from_file(pathname, root_edges=True, time_delay_edges=True, hours
     Returns:
         [type]: [description]
     """
-    edge_list = load_edge_list(f"{pathname}/edges.txt")
+    edge_list = load_edge_list(f"{pathname}/edges.txt", sep = " ")
 
     if(len(edge_list) == 0):
         return None
@@ -153,3 +151,21 @@ class TwitterNode(object):
         return [self.verified, self.user_created_at, self.followers_count,
                 self.friends_count, self.lists_count, self.favourites_count,
                 self.statuses_count, self.created_at]
+
+def random_split(data, train_pct=0.75, train_epochs=5, batch_size=1, seed=None):
+    """ returns two DataLoaders, resp. for train and test set 
+        according to the input split percentage """
+    if seed is not None:
+        np.random.default_rng(seed)
+
+    np.random.shuffle(data)
+    n = len(data)
+    train_size = int(n*train_pct)
+
+    train_set = data[:train_size]
+    test_set = data[train_size:]
+
+    train_loader = DisjointLoader(train_set, batch_size=batch_size, epochs=train_epochs, shuffle=True)
+    test_loader = DisjointLoader(test_set, batch_size=batch_size, epochs=1)
+
+    return train_loader, test_loader
